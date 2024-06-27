@@ -2,13 +2,14 @@ import { Op, Model, DataTypes } from 'sequelize';
 
 import dbStorage from '../db';
 
-export const UserStatus = {
+export const UserStatus = Object.freeze({
   ACTIVE: 'active',
-  NOT_ACTIVE: 'not_active'
-}
+  NOT_ACTIVE: 'not_active',
+});
 
-dbStorage.define("User",
-  'User',
+class User extends Model {}
+
+User.init(
   {
     id: {
       primaryKey: true,
@@ -33,26 +34,35 @@ dbStorage.define("User",
       type: DataTypes.STRING,
       allowNull: false,
     },
-    // status: {
-    //   type: "enum",
-    //   enum: UserStatus,
-    //   default: UserStatus.NOT_ACTIVE
-    // },
+    status: {
+      type: DataTypes.ENUM,
+      values: Object.values(UserStatus),
+      defaultValue: UserStatus.NOT_ACTIVE,
+    },
     ipVersion: {
       type: DataTypes.INTEGER,
+      defaultValue: 4,
     },
     ip: {
       type: DataTypes.STRING(48),
+      defaultValue: null,
     },
     port: {
       type: DataTypes.INTEGER,
+      defaultValue: null,
     },
     key: {
       type: DataTypes.STRING(48),
+      defaultValue: null,
     },
     authTime: {
       type: DataTypes.DATE,
+      defaultValue: null,
     },
   },
-  { tableName: 'users' },
+  {
+    sequelize: dbStorage.db,
+    modelName: 'User',
+    tableName: 'users' 
+  },
 );
