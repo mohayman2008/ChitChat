@@ -66,3 +66,5 @@ User.init(
     tableName: 'users' 
   },
 );
+
+module.exports = User;
