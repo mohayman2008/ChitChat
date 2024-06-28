@@ -2,8 +2,8 @@ import { Sequelize, Op, Model, DataTypes } from 'sequelize';
 
 const DB_HOST = process.env.DB_HOST || 'localhost';
 const DB_PORT = process.env.DB_PORT || 5432;
-const DB_DATABASE = process.env.DB_DATABASE || 'chitchat_dev';
-const DB_USER = process.env.DB_USER || 'chitchat';
+const DB_DATABASE = process.env.DB_DATABASE || 'test';
+const DB_USER = process.env.DB_USER || 'soma';
 const DB_PWD = process.env.DB_PWD || 'chitchat';
 
 const DB_URL = `postgres://${DB_USER}:${DB_USER}@${DB_HOST}:${DB_PORT}/${DB_DATABASE}`;
