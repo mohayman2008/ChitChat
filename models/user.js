@@ -16,8 +16,8 @@ User.init(
   {
     id: {
       primaryKey: true,
-      type: DataTypes.UUIDV4,
-      autoGe
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
       allowNull: false,
     },
     createdAt: {
@@ -81,7 +81,7 @@ UserConversations.init(
   {
     userId: {
       field: 'user_id',
-      type: DataTypes.UUIDV4,
+      type: DataTypes.UUID,
       allowNull: false,
       references: {
         model: User,
@@ -90,7 +90,7 @@ UserConversations.init(
     },
     conversationId: {
       field: 'conversation_id',
-      type: DataTypes.UUIDV4,
+      type: DataTypes.UUID,
       allowNull: false,
       references: {
         model: Conversation,
@@ -104,8 +104,6 @@ UserConversations.init(
     timestamps: false,
   },
 );
-
-
 
 User.belongsToMany(Conversation, {
   foreignKey: 'userId',
