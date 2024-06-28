@@ -1,43 +1,52 @@
 import { Op, Model, DataTypes } from 'sequelize';
 
-import dbStorage from '../db';
+import dbStorage from '../config/db.js';
 
-const User = require('./user');
+import  User from './user.js';
+import Conversation from './conversation.js';
 
 class Message extends Model {}
 
 Message.init({
-  id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
-  content: { type: DataTypes.TEXT, allowNull: false },
-  sentDateTime: { type: DataTypes.DATE, allowNull: false },
-  senderId: {
-    type: DataTypes.INTEGER,
-    references: { 
-        model: 'User',
-        key: 'id' },
-    allowNull: false,
-  },
-  receiverId: {
-    type: DataTypes.INTEGER,
-    references: { model: 'User', key: 'id' },
-    allowNull: false,
-  },
-}, 
-{ 
+    id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true
+    },
+    content: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    userId: {
+        type: DataTypes.UUID,
+        allowNull: false,
+        references: {
+            model: User,
+            key: 'id'
+        }
+    },
+    conversationId: {
+        type: DataTypes.UUID,
+        allowNull: false,
+        references: {
+            model: Conversation,
+            key: 'id'
+        }
+    },
+    createdAt: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
+        allowNull: false
+    }
+}, {
     sequelize: dbStorage.db,
     modelName: 'Message',
-    tableName: 'Messages' 
+    
 });
 
-// Define associations, a a one-to-many association
-// between the User model and the Message model.
-User.hasMany(Message, { foreignKey: 'senderId', as: 'SentMessages' });
-User.hasMany(Message, { foreignKey: 'receiverId', as: 'ReceivedMessages' });
+User.hasMany(Message, { foreignKey: 'userId' });
+Message.belongsTo(User, { foreignKey: 'userId' });
+Conversation.hasMany(Message, { foreignKey: 'conversationId' });
+Message.belongsTo(Conversation, { foreignKey: 'conversationId' });
 
-//senderId, receiverId : This sets up the senderId column in the Message model as the foreign key that
-   //links back to the id column in the User model. It indicates that the User model acts as the source
-   //of this association.
-   
-//SentMessages,ReceivedMessages : Provides an alias (SentMessages) that Sequelize uses to refer to this association.
-
-module.exports = { User, Message};
+export default Message;

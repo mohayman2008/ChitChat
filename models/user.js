@@ -1,6 +1,6 @@
 import { Op, Model, DataTypes } from 'sequelize';
 
-import dbStorage from '../db';
+import dbStorage from '../config/db.js';
 
 export const UserStatus = Object.freeze({
   ACTIVE: 'active',
@@ -13,12 +13,15 @@ User.init(
   {
     id: {
       primaryKey: true,
-      type: DataTypes.STRING(48),
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
       allowNull: false,
+    
     },
     createdAt: {
       type: DataTypes.DATE,
       allowNull: false,
+      defaultValue: DataTypes.NOW,
     },
     userName: {
       type: DataTypes.STRING,
@@ -63,8 +66,9 @@ User.init(
   {
     sequelize: dbStorage.db,
     modelName: 'User',
-    tableName: 'users' 
+    tableName: 'users',
+    timestamps:false
   },
 );
 
-module.exports = User;
+export default User;
