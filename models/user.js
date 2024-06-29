@@ -1,17 +1,28 @@
 import { Op, Model, DataTypes } from 'sequelize';
 
-import dbStorage from '../db';
-// import Conversation from './conversation';
+const { or } = Op;
 
-const Conversation = dbStorage.db.define('Conversation');
+// import dbStorage from '../db';
+import dbStorage from '../config/db.js';
+// import models from './models';
 
 export const UserStatus = Object.freeze({
   ACTIVE: 'active',
   NOT_ACTIVE: 'not_active',
 });
 
-export default class User extends Model {}
-
+export default class User extends Model {
+  async getConversations() {
+    let query = 'SELECT conversations.* FROM users ';
+    // let query = 'SELECT * FROM users ';
+    query += 'JOIN conversations ';
+    query += 'ON users.id = conversations.user1_id ';
+    query += 'OR users.id = conversations.user2_id ';
+    query += `WHERE users.id = '${this.id}'`;
+    const [queryResult, result] = await dbStorage.db.query(query);
+    return result.rows;
+  }
+}
 User.init(
   {
     id: {
@@ -20,13 +31,7 @@ User.init(
       defaultValue: DataTypes.UUIDV4,
       allowNull: false,
     },
-    createdAt: {
-      field: 'created_at';
-      type: DataTypes.DATE,
-      allowNull: false,
-    },
-    userName: {
-      field: 'user_name';
+    name: {
       type: DataTypes.STRING,
       unique: true,
       allowNull: false,
@@ -40,13 +45,19 @@ User.init(
       type: DataTypes.STRING,
       allowNull: false,
     },
+    createdAt: {
+      field: 'created_at',
+      type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: DataTypes.NOW,
+    },
     status: {
       type: DataTypes.ENUM,
       values: Object.values(UserStatus),
       defaultValue: UserStatus.NOT_ACTIVE,
     },
     ipVersion: {
-      field: 'ip_version';
+      field: 'ip_version',
       type: DataTypes.INTEGER,
       defaultValue: 4,
     },
@@ -63,7 +74,7 @@ User.init(
       defaultValue: null,
     },
     authTime: {
-      field: 'authenticated_at';
+      field: 'authenticated_at',
       type: DataTypes.DATE,
       defaultValue: null,
     },
@@ -75,43 +86,64 @@ User.init(
   },
 );
 
-class UserConversations extends Model {};
+// export class UserConversations extends Model {}
+// UserConversations.init(
+//   {
+//     userId: {
+//       field: 'user_id',
+//       type: DataTypes.UUID,
+//       allowNull: false,
+//       references: {
+//         model: User,
+//         key: 'id',
+//       },
+//     },
+//     conversationId: {
+//       field: 'conversation_id',
+//       type: DataTypes.UUID,
+//       allowNull: false,
+//       references: {
+//         model: Conversation,
+//         key: 'id',
+//       },
+//       defaultScope: {
+//         where: {
+//           [or]: [
+//             { user1Id: 'userId' },
+//             { user2Id: 'userId' },
+//           ],
+//         }
+//       },
+//     },
+//   },
+//   {
+//     sequelize: dbStorage.db,
+//     tableName: 'users_conversations',
+//     timestamps: false,
+//   },
+// );
 
-UserConversations.init(
-  {
-    userId: {
-      field: 'user_id',
-      type: DataTypes.UUID,
-      allowNull: false,
-      references: {
-        model: User,
-        key: 'id',
-      },
-    },
-    conversationId: {
-      field: 'conversation_id',
-      type: DataTypes.UUID,
-      allowNull: false,
-      references: {
-        model: Conversation,
-        key: 'id',
-      },
-    },
-  }
-  {
-    sequelize: dbStorage.db,
-    tableName: 'users_conversations',
-    timestamps: false,
-  },
-);
+// Conversation.belongsToMany(User, {
+//   through: UserConversations,
+//   foreignKey: 'conversationId', // foreign key in the join table referring to Conversation's id
+//   otherKey: 'userId', // foreign key in the join table referring to User's id
+//   onUpdate: 'CASCADE',
+//   onDelete: 'CASCADE',
+// });
 
-User.belongsToMany(Conversation, {
-  foreignKey: 'userId',
-  otherKey: 'conversationId',
+// User.belongsToMany(Conversation, {
+//   through: UserConversations,
+//   foreignKey: 'userId',
+//   otherKey: 'conversationId',
+//   onUpdate: 'CASCADE',
+//   onDelete: 'CASCADE',
+// });
+
+/* User.belongsToMany(Conversation, {
   through: UserConversations,
-  onUpdate: 'CASCADE',
-  onDelete: 'CASCADE',
-});
+  foreignKey: 'userId', // foreign key in the join table referring to User's id
+  otherKey: 'conversationId' // foreign key in the join table referring to Conversation's id
+}); */
 
 /* Conversation.belongsToMany(User, {
   foreignKey: 'conversationId',

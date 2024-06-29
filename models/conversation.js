@@ -1,29 +1,44 @@
-import { Op, Model, DataTypes } from 'sequelize';
+import { Model, DataTypes } from 'sequelize';
 
-import dbStorage from '../db';
-import { type } from 'os';
-
-const User = require('./user');
-
+import dbStorage from '../config/db.js';
+// import User from './user';
+const User = dbStorage.db.models.User;
 
 class Conversation extends Model {}
-
 Conversation.init({
-  id: { type: DataTypes.INTEGER,
-    autoIncrement: true,
-    primaryKey: true },
-  user1: {
-    type: DataTypes.INTEGER,
-    allowNull: false },
-    user2 : {
-        type: DataTypes.INTEGER,
-        allowNull:false
-    },
-},
-
-
-{ 
-    sequelize: dbStorage.db,
-    modelName: 'Conversation',
-    tableName: 'Conversations' 
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
+  user1Id: {
+    field: 'user1_id',
+    type: DataTypes.UUID,
+    allowNull: false,
+    references: {
+      model: User,
+      key: 'id'
+    }
+  },
+  user2Id: {
+    field: 'user2_id',
+    type: DataTypes.UUID,
+    allowNull: false,
+    references: {
+      model: User,
+      key: 'id'
+    }
+  },
+  createdAt: {
+    field: 'created_at',
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW,
+    allowNull: false
+  }
+}, {
+  sequelize: dbStorage.db,
+  tableName: 'conversations',
+  timestamps: false,
 });
+
+export default Conversation;
