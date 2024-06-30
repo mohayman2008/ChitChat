@@ -9,9 +9,11 @@ import UserService from './services/userServices.js';
 import MessageService from './services/messageServices.js';
 import ConversationService from './services/conversationServices';
 
+const LOGGING_ENABLED = true;
 
 // Function to initialize models and associations
 async function init() {
+  dbStorage.loggingEnable(LOGGING_ENABLED);
   try {
     // await dbStorage.db.sync({ force: true }); // Sync models with database (force:true for development only)
     await dbStorage.db.sync({ alter: true });
@@ -61,27 +63,20 @@ async function init() {
 
     const user1 = await User.findByPk('0077ba34-e018-474c-a917-48c96873adf2');
     const user2 = await User.findByPk('817aebdf-2728-4503-9d2f-183df2024aad');
-    console.log('Users retrieved:', user1.toJSON(), user2.toJSON());
+    console.log('Users retrieved:', user1.toJSON(), user2.toJSON(), '\n');
 
     const conversation = await Conversation.findByPk('03839c43-c5f1-4dc4-a71e-f2eb02ddd519');
-    console.log('Conversation retrieved:', conversation.toJSON());
+    console.log('Conversation retrieved:', conversation.toJSON(), '\n');
 
     const message1 = await Message.findByPk('dc20c867-9939-4015-87ef-d005dd8e003c');
     const message2 = await Message.findByPk('0d10e3f0-91a0-48f4-869a-ead3596441a2');
-    console.log('Messages exchanged:', message1.toJSON(), message2.toJSON());
+    console.log('Messages exchanged:', message1.toJSON(), message2.toJSON(), '\n');
 
-    const userConversations = await user1.getConversations();
-    // console.log(`user1 conversations = ${Object.keys(userConversations[1])}`);
-    console.log('user1 conversations = [');
-    for (const conv of userConversations) {
-      console.log(conv);
-    }
-    console.log(']');
-    
+    const user1Conversations = await user1.getConversations();
+    console.log('user1 conversations =\n', user1Conversations.map(conv => conv.toJSON()), '\n');
 
-    // Fetch all conversations with users included
-    // const allConversations = await Conversation.findAll({ include: [User] });
-    // console.log('All conversations:', allConversations.map(conv => conv.toJSON()));
+    const user2Conversations = await user2.getConversations();
+    console.log('user2 conversations =\n', user2Conversations.map(conv => conv.toJSON()), '\n');
 
     const messagesInConversation = await Message.findAll({ where: { conversationId: conversation.id } });
     console.log('Messages in conversation:', messagesInConversation.map(msg => msg.toJSON()));

@@ -4,7 +4,7 @@ const { or } = Op;
 
 // import dbStorage from '../db';
 import dbStorage from '../config/db.js';
-// import models from './models';
+// import x from './models';
 
 export const UserStatus = Object.freeze({
   ACTIVE: 'active',
@@ -13,16 +13,18 @@ export const UserStatus = Object.freeze({
 
 export default class User extends Model {
   async getConversations() {
-    let query = 'SELECT conversations.* FROM users ';
-    // let query = 'SELECT * FROM users ';
-    query += 'JOIN conversations ';
-    query += 'ON users.id = conversations.user1_id ';
-    query += 'OR users.id = conversations.user2_id ';
-    query += `WHERE users.id = '${this.id}'`;
-    const [queryResult, result] = await dbStorage.db.query(query);
-    return result.rows;
+    const result = await dbStorage.db.models.Conversation.findAll({
+      where: {
+        [or]: [
+          { user1Id: this.id },
+          { user2Id: this.id },
+        ],
+      }, 
+    });
+    return result;
   }
 }
+
 User.init(
   {
     id: {

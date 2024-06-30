@@ -10,22 +10,22 @@ const DB_URL = `postgres://${DB_USER}:${DB_USER}@${DB_HOST}:${DB_PORT}/${DB_DATA
 
 class DBStorage {
   constructor () {
-    this.db = new Sequelize(DB_URL);
-    // console.log(Object.keys(this.db.__proto__));
-    // this.db.then(() => { this.define = this.db.define; });
-    // this.define = this.db.define;
-    // console.log(this.define.toString());
+    this.db = new Sequelize(DB_URL, { logging: false });
   }
   
   async checkAlive() {
     try {
       await this.db.authenticate();
-      console.log(Object.keys(this.db.define.__proto__));
       return true;
     } catch (err) {
       console.error(err.message || err.toString());
       return false;
     }
+  }
+
+  loggingEnable(enable=true, cb=console.log) {
+    if (!enable) this.db.options.logging = false;
+    else this.db.options.logging = cb;
   }
 
   async sync(alter=false) {
