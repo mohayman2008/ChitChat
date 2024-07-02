@@ -18,14 +18,19 @@ export default class AuthController {
       - validate password
       - store the photo
     */
-    data.password = hashSync(password, genSaltSync(10));
-    const user = await User.create(data).toJSON({});
+    const creationData = {
+      name,
+      email,
+      password: hashSync(password, genSaltSync(10)),
+      picture: picURL,
+    }
+    const user = await User.create(creationData).toJSON({});
     return {
       status: 'OK',
       id: user.id,
       name: user.name,
       email: user.email,
-      picURL: user.pic,
+      picURL: user.picture,
     }
   }
 
