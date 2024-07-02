@@ -15,9 +15,19 @@ const io = new Server(httpServer, {
 io.on('connection', socket => {
     console.log(`User connected: ${socket.id}`);
 
-    socket.on('signUp', signUp);
+    // client event emitter should pass a callback as the last arg,
+    //  that call back will be called with the response
+    socket.on('signUp', async (data, cb) => {
+        const response = await signUp(data);
+        cb(response);
+    });
 
-    socket.on('authenticate', authenticate);
+    // client event emitter should pass a callback as the last arg,
+    //  that call back will be called with the response
+    socket.on('authenticate', async (data, cb) => {
+        const response = await authenticate(data);
+        cb(response);
+    });
 
     // Event listener for setting username
     socket.on('setUsername', username => {
