@@ -34,7 +34,6 @@ module.exports = {
       files: ['*.js'],
       excludedFiles: [
         'babel.config.js',
-        'node_modules/*'
       ],
     }
   ],

@@ -1,11 +1,17 @@
 import { Model, DataTypes } from 'sequelize';
 
 import dbStorage from '../config/db.js';
-
+import { updateById, deleteById } from './modelsHelperMethods';
+// import x from './models'; // eslint-disable no-unused-vars
 import  User from './user.js';
 import Conversation from './conversation.js';
+// const User = dbStorage.db.models.User;
+// const Conversation = dbStorage.db.models.Conversation;
 
-class Message extends Model {}
+class Message extends Model {
+  static updateById = updateById;
+  static deleteById = deleteById;
+}
 
 Message.init({
   id: {
@@ -53,11 +59,12 @@ Message.init({
 }, {
   sequelize: dbStorage.db,
   tableName: 'messages',
-  timestamps: false,
+  paranoid: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
+  deletedAt: 'deleted_at',
 });
 
-// User.hasMany(Message, { foreignKey: 'userId' });
-// Message.belongsTo(User, { foreignKey: 'userId' });
 Conversation.hasMany(Message, { foreignKey: 'conversationId' });
 Message.belongsTo(Conversation, { foreignKey: 'conversationId' });
 
