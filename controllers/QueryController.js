@@ -1,5 +1,5 @@
 import { verifyKey } from '../controllers/AuthController';
-import { User, UserStatus, Conversation, Message } from '../models/models',
+import { User, UserStatus, Conversation, Message } from '../models/models'
 
 export default class QueryController {
   
