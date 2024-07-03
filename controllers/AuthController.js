@@ -1,9 +1,10 @@
 import { genSaltSync, hashSync, compareSync } from 'bcrypt';
-import { v4 as uuidv4 } from 'uuid';
-
+import pkg from 'uuid';
+const { v4: uuidv4 } = pkg;
 import { User, UserStatus } from '../models/models.js';
 
 export default class AuthController {
+
   static async signUp(data) {
     for (const key of ['name', 'email', 'password']) {
       if (!data[key]) {
@@ -23,7 +24,7 @@ export default class AuthController {
       password: hashSync(password, genSaltSync(10)),
       picture: picURL,
     };
-    const user = await User.create(creationData).toJSON({});
+    const user = await User.create(creationData);
     return {
       status: 'OK',
       id: user.id,
@@ -68,6 +69,93 @@ export default class AuthController {
       key: user.key,
     };
   }
+
+  //send messsage model
+  static async sendMessage(socket, { username, message }) {
+    try {
+      // Find the recipient user by username
+      const recipient = await User.findOne({ where: { name: username } });
+      if (!recipient) {
+        // If recipient not found, emit error message to sender
+        socket.emit('sendMessage', { status: 'error', message: 'Recipient not found' });
+        return;
+      }
+  
+      // Find or create a conversation between sender and recipient
+      let conversation = await Conversation.findOne({
+        where: {
+          [Op.or]: [
+            { user1Id: socket.userId, user2Id: recipient.id },
+            { user1Id: recipient.id, user2Id: socket.userId },
+          ],
+        },
+      });
+  
+      if (!conversation) {
+        // If conversation doesn't exist, create a new one
+        conversation = await Conversation.create({
+          user1Id: socket.userId,
+          user2Id: recipient.id,
+        });
+      }
+  
+      // Save message to database
+      const newMessage = await Message.create({
+        conversationId: conversation.id,
+        senderId: socket.userId,
+        receiverId: recipient.id,
+        content: message,
+      });
+  
+      // Emit success response to sender
+      socket.emit('sendMessage', { status: 'success', message: 'Message sent successfully' });
+  
+      // Check recipient's online status and emit message if online
+      const recipientSocket = onlineUsers[recipient.id];
+      if (recipientSocket) {
+        recipientSocket.emit('receiveMessage', {
+          fromUserId: socket.userId,
+          message,
+          sentAt: newMessage.createdAt,
+        });
+      }
+    } catch (error) {
+      // Handle errors and emit error message to sender
+      console.error('Error sending message:', error.message);
+      socket.emit('sendMessage', { status: 'error', message: 'Error sending message' });
+    }
+  }
+  
+
+//list convo method
+
+
+static async listConversations(socket) {
+  try {
+    // Fetch recent conversations involving the authenticated user
+    const conversations = await Conversation.findAll({
+      where: {
+        [Op.or]: [{ user1Id: socket.userId }, { user2Id: socket.userId }],
+      },
+      order: [['updatedAt', 'DESC']], // Order by updatedAt in descending order
+      limit: 10, // Limit to 10 conversations per pagination
+      include: [
+        { model: User, as: 'user1', attributes: ['id', 'name', 'status'] }, // Include user1 details
+        { model: User, as: 'user2', attributes: ['id', 'name', 'status'] }, // Include user2 details
+      ],
+    });
+
+    // Emit conversations to the client
+    socket.emit('listConversations', { status: 'success', conversations });
+  } catch (error) {
+    // Handle errors and emit error message to the client
+    console.error('Error fetching conversations:', error.message);
+    socket.emit('listConversations', { status: 'error', message: 'Error fetching conversations' });
+  }
+}
+
+
+
 }
 
 
