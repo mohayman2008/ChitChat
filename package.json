@@ -7,7 +7,7 @@
   "scripts": {
     "node": "./node_modules/node/bin/node",
     "lint": "./node_modules/.bin/eslint",
-    "check-lint": "./node_modules/.bin/eslint [ms]*/*.js *.js",
+    "check-lint": "./node_modules/.bin/eslint [msc]*/*.js *.js",
     "start-server": "nodemon --exec babel-node --presets @babel/preset-env ./server.js",
     "start-client": "nodemon --exec babel-node --presets @babel/preset-env ./client.js",
     "dev": "nodemon --exec babel-node --presets @babel/preset-env",
@@ -29,6 +29,7 @@
     "pg": "^8.12.0",
     "pg-hstore": "^2.3.4",
     "sequelize": "^6.37.3",
+    "socket.io": "^4.7.5",
     "sqlite3": "^5.1.7",
     "typeorm": "^0.3.20",
     "ws": "^8.17.1"
@@ -39,6 +40,7 @@
     "@babel/node": "^7.8.0",
     "@babel/preset-env": "^7.8.2",
     "@babel/register": "^7.8.0",
+    "babel-eslint": "^10.1.0",
     "chai": "^4.2.0",
     "chai-http": "^4.3.0",
     "eslint": "^6.4.0",

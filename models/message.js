@@ -1,12 +1,8 @@
 import { Model, DataTypes } from 'sequelize';
 
 import dbStorage from '../config/db.js';
-import { updateById, deleteById } from './modelsHelperMethods';
-// import x from './models'; // eslint-disable no-unused-vars
-import  User from './user.js';
-import Conversation from './conversation.js';
-// const User = dbStorage.db.models.User;
-// const Conversation = dbStorage.db.models.Conversation;
+import { updateById, deleteById } from './modelsHelperMethods.js';
+import  { User, Conversation } from './models.js';
 
 class Message extends Model {
   static updateById = updateById;
@@ -50,12 +46,6 @@ Message.init({
     type: DataTypes.STRING,
     allowNull: false
   },
-  createdAt: {
-    field: 'created_at',
-    type: DataTypes.DATE,
-    defaultValue: DataTypes.NOW,
-    allowNull: false
-  }
 }, {
   sequelize: dbStorage.db,
   tableName: 'messages',

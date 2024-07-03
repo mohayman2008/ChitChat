@@ -1,10 +1,7 @@
 // Example script to demonstrate usage
 /* eslint-disable no-unused-vars */
 import dbStorage from './config/db.js';
-import x from './models/models.js';
-import User from './models/user.js';
-import Conversation from './models/conversation.js';
-import Message from './models/message.js';
+import { User, UserStatus, Conversation, Message } from './models/models.js';
 
 const LOGGING_ENABLED = false;
 const [USER1_Id, USER2_Id] = ['', ''];
@@ -17,7 +14,7 @@ let syncOptions = { alter: true };
 async function init() {
   dbStorage.loggingEnable(LOGGING_ENABLED);
   try {
-    syncOptions = { force:true }; // (force:true for development only)
+    syncOptions = { force: true }; // (force:true for development only)
     await dbStorage.db.sync(syncOptions);
     console.log('Database synchronized');
     

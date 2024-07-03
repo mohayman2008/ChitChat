@@ -1,6 +1,3 @@
-export { User, UserStatus } from './user';
-export { Conversation } from './conversation';
-export { Message } from './message';
-
-// to import: { User, UserStatus, Conversation, Message }
-export default 123;
+export { default as User, UserStatus } from './user.js';
+export { default as Conversation } from './conversation.js';
+export { default as Message } from './message.js';

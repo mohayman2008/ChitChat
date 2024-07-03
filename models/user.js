@@ -2,8 +2,8 @@ import { Op, Model, DataTypes } from 'sequelize';
 const { or } = Op;
 
 import dbStorage from '../config/db.js';
-import { updateById, deleteById } from './modelsHelperMethods';
-import x from './models'; // eslint-disable no-unused-vars
+import { updateById, deleteById } from './modelsHelperMethods.js';
+import { Conversation } from './models.js';
 
 export const UserStatus = Object.freeze({
   ACTIVE: 'active',
@@ -15,7 +15,7 @@ export default class User extends Model {
   static deleteById = deleteById;
 
   async getConversations() {
-    const result = await dbStorage.db.models.Conversation.findAll({
+    const result = await Conversation.findAll({
       where: {
         [or]: [
           { user1Id: this.id },

@@ -1,10 +1,9 @@
 import { genSaltSync, hashSync, compareSync } from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
 
-import { User, UserStatus, Conversation, Message } from '../models/models'
+import { User, UserStatus } from '../models/models.js';
 
 export default class AuthController {
-  
   static async signUp(data) {
     for (const key of ['name', 'email', 'password']) {
       if (!data[key]) {
@@ -23,7 +22,7 @@ export default class AuthController {
       email,
       password: hashSync(password, genSaltSync(10)),
       picture: picURL,
-    }
+    };
     const user = await User.create(creationData).toJSON({});
     return {
       status: 'OK',
@@ -31,7 +30,7 @@ export default class AuthController {
       name: user.name,
       email: user.email,
       picURL: user.picture,
-    }
+    };
   }
 
   static async verifyKey(key) {
@@ -72,8 +71,8 @@ export default class AuthController {
 }
 
 
-    /**
-     * 
+/**
+ * 
 const SECRET_KEY = 'your_secret_key'; // Use a secure secret key in production
 
 async function authenticateUser(email, password) {
