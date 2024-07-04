@@ -42,12 +42,12 @@ To run ChitChat locally, follow these steps:
     npm install
 3. **Set up the database:**
     ```bash
-    * go to config/db.js and modify the following *
+    *go to config/db.js and modify the following*
     DB_HOST=localhost
     DB_PORT=5432
-    DB_DATABASE= *your_database*
-    DB_USER= *your_username*
-    DB_PWD= *your_password*
+    DB_DATABASE= **your_database**
+    DB_USER= **your_username**
+    DB_PWD= **your_password**
 
 4.  **Start the serve:**
     ```bash
