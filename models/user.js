@@ -14,8 +14,8 @@ export default class User extends Model {
   static updateById = updateById;
   static deleteById = deleteById;
 
-  async getConversations() {
-    const result = await Conversation.findAll({
+  async getConversations(offset=0, limit) {
+    const queryOptions = {
       where: {
         [or]: [
           { user1Id: this.id },
@@ -23,6 +23,8 @@ export default class User extends Model {
         ],
         deleted_at: null,
       },
+      order: [['updated_at', 'DESC']],
+      offset,
       attributes: { exclude: ['user1Id', 'user2Id', 'deleted_at'] },
       include: [
         {
@@ -36,7 +38,9 @@ export default class User extends Model {
           attributes: ['id', 'name', 'status'],
         },
       ],
-    });
+    }
+    if (typeof limit === 'number') queryOptions.limit = limit;
+    const result = await Conversation.findAll(queryOptions);
     return result;
   }
 }

@@ -24,7 +24,10 @@
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
+    "cli-color": "^2.0.4",
+    "clui": "^0.3.6",
     "express": "^4.17.1",
+    "inquirer": "^9.3.3",
     "node": "^22.3.0",
     "pg": "^8.12.0",
     "pg-hstore": "^2.3.4",

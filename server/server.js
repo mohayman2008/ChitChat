@@ -5,8 +5,10 @@ import dbStorage from '../config/db.js';
 
 import AuthController from '../controllers/AuthController.js';
 import QueryController from '../controllers/QueryController.js';
-const { signUp, authenticate } = AuthController;
+const { signUp, authenticate, signOut } = AuthController;
 const { getUsers, getConversations, getMessages } = QueryController;
+
+// export const onlineUsers = [];
 
 dbStorage.sync({ force: false }).then(() => {
   console.log('Database & tables created!');
@@ -19,6 +21,7 @@ const httpServer = createServer();
 const io = new Server(httpServer, {
   // Options can go here
 });
+export const sockets = io.sockets.sockets; 
 
 // Event listener for new connections
 io.on('connection', socket => {
@@ -26,62 +29,13 @@ io.on('connection', socket => {
 
   // client event emitter should pass a callback as the last arg,
   //  that call back will be called with the response
-  socket.on('signUp', async (data, cb) => {
-    const response = await signUp(data);
-    cb(response);
-  });
-
-  socket.on('login', async (data, callback) => {
-    try {
-      const result = await AuthController.authenticate(data);
-      callback(result);
-    } catch (error) {
-      console.error('Error during login:', error);
-      callback({ status: 'error', message: 'An error occurred during login.' });
-    }
-  });
-
-
-  // client event emitter should pass a callback as the last arg,
-  //  that call back will be called with the response
-  socket.on('authenticate', async (data, cb) => {
-    const response = await authenticate(data);
-    cb(response);
-  });
+  socket.on('signUp', signUp); /* fix isssues */
+  socket.on('login', authenticate);
+  socket.on("disconnect", signOut); /* //////////////////// */
 
   socket.on('getUsers', getUsers);
   socket.on('getConversations', getConversations);
   socket.on('getMessages', getMessages);
-
-  // Event listener for setting username
-  socket.on('setUsername', username => {
-    socket.username = username;
-    io.emit('userSet', { id: socket.id, username: socket.username });
-  });
-
-  // Event listener for incoming messages
-  socket.on('msg', data => {
-    io.emit('newmsg', { id: socket.id, username: socket.username, message: data.message });
-  });
-
-
-// Event handler for getting list of registered users
-socket.on('getUsers', async (callback) => {
-  try {
-    // Fetch all users from the database, specifying attributes to retrieve
-    const users = await User.findAll({
-      attributes: ['id', 'name', 'status']
-    });
-
-    // Send success response with the list of users to the client
-    callback({ status: 'OK', users });
-  } catch (error) {
-    // Handle errors and send error response to the client
-    console.error('Error fetching users:', error);
-    callback({ status: 'error', message: 'Failed to fetch users.' });
-  }
-});
-
 
   // Send a message to another user
   socket.on('sendMessage', async (data, callback) => {

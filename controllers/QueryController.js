@@ -46,10 +46,18 @@ export default class QueryController {
         message: 'Authentication failed',
       });
     }
+    const offset = data.page || 0;
+    const limit = data.pageSize || 30;
+    if ((typeof offset !== "number" && offset >= 0) || (typeof limit !== "number" && limit > 0)) {
+      return cb({
+        status: 'error',
+        message: '<page> and <pageSize> should be valid numbers',
+      });
+    }
 
     return cb({
       status: 'OK',
-      result: (await user.getConversations()).map(obj => obj.toJSON()),
+      result: (await user.getConversations(offset, limit)).map(obj => obj.toJSON()),
     });
   }
 
