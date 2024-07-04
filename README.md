@@ -41,13 +41,15 @@ To run ChitChat locally, follow these steps:
     ```bash
     npm install
 3. **Set up the database:**
-    ```bash
+    ```
+    bash
     *go to config/db.js and modify the following*
     DB_HOST=localhost
     DB_PORT=5432
     DB_DATABASE= **your_database**
     DB_USER= **your_username**
     DB_PWD= **your_password**
+    ```
 
 4.  **Start the serve:**
     ```bash
@@ -61,20 +63,21 @@ To run ChitChat locally, follow these steps:
 
 ## Register
 *To register a new user, follow the prompts after starting the client:*
-
+```
   ? Welcome! Choose an option: Register
   ? Enter your username: <your_username>
   ? Enter your email: <your_email>
   ? Enter your password: <your_password>
+```
 
 ## Login
-*To log in, follow the prompts:*
-
+**To log in, follow the prompts:**
+```
 ? Welcome! Choose an option: Login
 ? Enter your email: <your_email>
 ? Enter your password: <your_password>
-
-*If the login fails, you can try again or go back to the main menu.*
+```
+**If the login fails, you can try again or go back to the main menu.**
 
 ## List Users
 *After logging in, you can list all registered users:*
@@ -88,10 +91,11 @@ To run ChitChat locally, follow these steps:
 
 ## Start Chatting
 *Initiate a chat with another user:*
-
+```
 ? Choose an action: Start Chatting
 ? Enter username to chat with: <username>
 ? Enter your message: <your_message>
+```
 
 ## Technologies Used
 ```
