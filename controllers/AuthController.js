@@ -1,5 +1,5 @@
 import { genSaltSync, hashSync, compareSync } from 'bcrypt';
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4, validate as isUUID } from 'uuid';
 
 import { User, UserStatus } from '../models/models.js';
 
@@ -23,7 +23,7 @@ export default class AuthController {
       password: hashSync(password, genSaltSync(10)),
       picture: picURL,
     };
-    const user = await User.create(creationData).toJSON({});
+    const user = await User.create(creationData);
     return {
       status: 'OK',
       id: user.id,
@@ -34,6 +34,9 @@ export default class AuthController {
   }
 
   static async verifyKey(key) {
+    if (!isUUID(key)) {
+      return null;
+    }
     return User.findOne({
       where: { key: key },
     });
@@ -58,10 +61,13 @@ export default class AuthController {
     if (!compareSync(password, user.password)) {
       return { status: 'error', message: 'Invalid password' };
     }
-    user.key = uuidv4();
-    user.lastLogin = new Date();
-    user.status = UserStatus.ACTIVE;
-    await user.save();
+
+    // Todo: improve the strength of the key
+    await user.update({
+      key: uuidv4(),
+      lastLogin: new Date(),
+      status: UserStatus.ACTIVE,
+    });
     return {
       status: 'OK',
       id: user.id,

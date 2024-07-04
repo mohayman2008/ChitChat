@@ -1,8 +1,8 @@
 {
-  "type": "module",
   "name": "chit_chat",
   "version": "0.0.1",
   "description": "Connect - Converse - ChitChat",
+  "type": "module",
   "main": "server.js",
   "scripts": {
     "node": "./node_modules/node/bin/node",
@@ -30,6 +30,7 @@
     "pg-hstore": "^2.3.4",
     "sequelize": "^6.37.3",
     "socket.io": "^4.7.5",
+    "socket.io-client": "^4.7.5",
     "sqlite3": "^5.1.7",
     "typeorm": "^0.3.20",
     "ws": "^8.17.1"

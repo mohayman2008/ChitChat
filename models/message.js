@@ -58,4 +58,14 @@ Message.init({
 Conversation.hasMany(Message, { foreignKey: 'conversationId' });
 Message.belongsTo(Conversation, { foreignKey: 'conversationId' });
 
+Message.belongsTo(User, {
+  foreignKey: 'senderId',
+  as:'sender',
+});
+
+Message.belongsTo(User, {
+  foreignKey: 'receiverId',
+  as: 'receiver',
+});
+
 export default Message;

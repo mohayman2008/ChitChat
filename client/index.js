@@ -56,7 +56,6 @@ function handleSignUp() {
           console.error('Signup Error:', response.message);
         } else {
           console.log('Signup successful:', response);
-          isAuthenticated = true; // Set authentication flag to true upon successful signup
         }
       });
     });
@@ -86,6 +85,26 @@ function handleAuthenticate() {
 
 
 // end of functions
+
+// Tests
+const testData = {
+  key: 'd81e66cc-52dc-43d1-9b59-30073798d9e9', // user1 key
+  // key: '07f7ae3b-29de-453a-a061-c4d872ceac69', // user2 key
+  conversationId: '8c13f164-dd7a-4e4f-9903-92cefe1b7400',
+};
+
+function testHandler(err, data) {
+  if (err) {
+    console.error('Error:', err);
+  } else {
+    console.log('Data:\n', data);
+  }
+}
+
+socket.timeout(10000).emit('getUsers', testData, testHandler);
+socket.timeout(10000).emit('getConversations', testData, testHandler);
+socket.timeout(10000).emit('getMessages', testData, testHandler);
+// End of tests
 
 rl.question('Enter your username: ', answer => {
   username = answer.trim();

@@ -2,7 +2,9 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 
 import AuthController from '../controllers/AuthController.js';
+import QueryController from '../controllers/QueryController.js';
 const { signUp, authenticate } = AuthController;
+const { getUsers, getConversations, getMessages } = QueryController;
 
 // Create an HTTP server
 const httpServer = createServer();
@@ -29,6 +31,10 @@ io.on('connection', socket => {
     const response = await authenticate(data);
     cb(response);
   });
+
+  socket.on('getUsers', getUsers);
+  socket.on('getConversations', getConversations);
+  socket.on('getMessages', getMessages);
 
   // Event listener for setting username
   socket.on('setUsername', username => {
