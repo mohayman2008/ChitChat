@@ -103,6 +103,7 @@ PostgreSQL: Relational database
 ```
 
 ## Project Structure
+```
 ChitChat/
 ├── client/
 │   └── index.js
@@ -122,6 +123,7 @@ ChitChat/
 ├── .env
 ├── package.json
 └── README.md
+```
 
 ## Contributing
 *Contributions are welcome! Please fork the repository and create a pull request with your changes*
