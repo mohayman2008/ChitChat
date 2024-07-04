@@ -8,6 +8,10 @@ import QueryController from '../controllers/QueryController.js';
 const { signUp, authenticate } = AuthController;
 const { getUsers, getConversations, getMessages } = QueryController;
 
+dbStorage.sync({ force: false }).then(() => {
+  console.log('Database & tables created!');
+});
+
 // Create an HTTP server
 const httpServer = createServer();
 
