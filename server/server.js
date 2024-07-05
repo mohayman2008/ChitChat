@@ -2,26 +2,13 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { v4 as uuidv4 } from 'uuid';
 
-// import { User } from '../models/models.js';
+import { Session, User } from '../models/models.js';
 import dbStorage from '../config/db.js';
-import sessionStore from './sessionStore.js';
 import AuthController from '../controllers/AuthController.js';
 import QueryController from '../controllers/QueryController.js';
 import ChatController from '../controllers/ChatController.js';
 
-// Test Code
-// console.log(uuidv4());
-sessionStore.saveSession('78849577-dee8-4bf8-8d14-c6b663213303', {
-  userId: '6a7ed183-bda3-4bce-8762-7d8caaf728a4',
-  userKey: 'd81e66cc-52dc-43d1-9b59-30073798d9e9',
-});
-sessionStore.saveSession('ede26cd5-a63f-47f3-9468-f7df17ce8738', {
-  userId: 'd80d582c-0d58-413d-8d44-c51f3b2011fb',
-  userKey: '07f7ae3b-29de-453a-a061-c4d872ceac69',
-});
-// End test code
-
-dbStorage.sync({ force: false }).then(() => {
+dbStorage.sync({ force: false, alter: true }).then(() => {
   console.log('Database & tables created!');
 });
 
@@ -32,25 +19,25 @@ const httpServer = createServer();
 const io = new Server(httpServer, {
   // Options can go here
 });
-io.use((socket, next) => {
-  const sessionId = socket.handshake.auth.sessionId;
-  if (sessionId) {
-    const session = sessionStore.findSession(sessionId);
+io.use(async (socket, next) => {
+  const key = socket.handshake.auth.key;
+  if (key) {
+    const session = await Session.findByPk(key, { include: ['user'] });
     if (!session) {
       socket.authorized = false;
       return next();
     }
     socket.authorized = true;
-    socket.sessionId = sessionId;
-    socket.userId = session.userId;
-    socket.userKey = session.userKey;
+    socket.session = session;
+    socket.key = key;
+    socket.user = session.user;
   }
   next();
 });
 
 // Event listener for new connections
 io.on('connection', socket => {
-  console.log(`User connected: ${socket.sessionId}`);
+  console.log(`User connected: ${socket.key}`);
 
   if (socket.authorized) {
     socket.emit('session', {
@@ -79,7 +66,7 @@ io.on('connection', socket => {
 
   // Event listener for disconnection
   socket.on('disconnect', () => {
-    console.log(`User disconnected: ${socket.id}`);
+    console.log(`User disconnected: ${socket.key}`);
   });
 });
 

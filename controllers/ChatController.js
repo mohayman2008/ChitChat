@@ -38,8 +38,6 @@ class ChatController {
       }
     );
 
-    console.log(message.toJSON());
-
     return {
       response: message.toJSON(),
       messageId: message.id,
@@ -151,7 +149,7 @@ class ChatController {
 
     const receiverId = result.receiverId;
     for (const socket of sockets.values()) {
-      if (socket.userId === receiverId) {
+      if (socket.user.id === receiverId) {
         socket.emit('new message', message.toJSON());
       }
     }

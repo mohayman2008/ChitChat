@@ -81,28 +81,6 @@ User.init(
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
     },
-    ipVersion: {
-      field: 'ip_version',
-      type: DataTypes.INTEGER,
-      defaultValue: 4,
-    },
-    ip: {
-      type: DataTypes.STRING(48),
-      defaultValue: null,
-    },
-    port: {
-      type: DataTypes.INTEGER,
-      defaultValue: null,
-    },
-    key: {
-      type: DataTypes.STRING(48),
-      defaultValue: null,
-    },
-    authTime: {
-      field: 'authenticated_at',
-      type: DataTypes.DATE,
-      defaultValue: null,
-    },
   },
   {
     sequelize: dbStorage.db,

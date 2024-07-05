@@ -1,7 +1,7 @@
 import { genSaltSync, hashSync, compareSync } from 'bcrypt';
 import { v4 as uuidv4, validate as isUUID } from 'uuid';
 
-import { User, UserStatus } from '../models/models.js';
+import { User, UserStatus, Session } from '../models/models.js';
 // import { sockets } from '../server/server.js';
 
 export default class AuthController {
@@ -35,14 +35,14 @@ export default class AuthController {
   }
 
   static async verifyKey(key) {
-    if (!isUUID(key)) {
-      return null;
-    }
-    const user = await User.findOne({
-      where: { key: key },
-    });
-    user.update({ lastLogin: new Date()}); // Don't add await so as not to affect the performance
-    return user;
+    if (!isUUID(key)) return null;
+
+    const session = await Session.findByPk(key, { include: ['user'] });
+
+    if (!session) return null;
+
+    session.user.update({ lastLogin: new Date()}); // Don't add await so as not to affect the performance
+    return session.user;
   }
 
   static async authenticate(data, cb) {
@@ -66,16 +66,15 @@ export default class AuthController {
     }
 
     // Todo: improve the strength of the key
-    await user.update({
-      key: uuidv4(),
-      authTime: new Date(),
+    const session = await user.getSession() || await user.createSession();
+    user.update({
       lastLogin: new Date(),
       status: UserStatus.ACTIVE,
     });
     return cb({
       status: 'OK',
       id: user.id,
-      key: user.key,
+      key: session.key,
     });
   }
 
