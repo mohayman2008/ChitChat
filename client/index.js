@@ -110,15 +110,40 @@ async function sendMessage(userId) {
 
 // Function to handle listing conversations
 function listConversations() {
-  socket.emit('getConversations', { key: userKey}, response => {
+  socket.emit('getConversations', { key: userKey }, response => {
     if (response.status === 'error') {
       console.error('Error fetching conversations:', response.message);
     } else {
-      console.log('Previous conversations:');
-      response.conversations.forEach((conversation, index) => {
-        console.log(`${index + 1}. ${conversation.user.name}`);
-      });
-      promptUserAction();
+      const conversationChoices = response.conversations.map(conversation => ({
+        name: `${conversation.user.name}`,
+        value: conversation.id, // Use conversation ID as value
+      }));
+
+      inquirer
+        .prompt([
+          {
+            type: 'list',
+            name: 'conversationId',
+            message: 'Select a conversation:',
+            choices: conversationChoices,
+          },
+        ])
+        .then(answer => {
+          const conversationId = answer.conversationId;
+          // Now fetch and display messages for the selected conversationId
+          socket.emit('getMessages', { key: userKey, conversationId }, response => {
+            if (response.status === 'OK') {
+              console.log('Messages in conversation:');
+              response.messages.forEach(message => {
+                console.log(`${message.sender.name}: ${message.content}`);
+              });
+              // Prompt user for further actions like sending a message
+              promptUserAction();
+            } else {
+              console.error('Error fetching messages:', response.message);
+            }
+          });
+        });
     }
   });
 }
