@@ -86,26 +86,37 @@ function listUsers() {
 }
 
 // Function to handle sending messages
-async function sendMessage(userId) {
-  const { message } = await inquirer.prompt([{ type: 'input', name: 'message', message: 'Enter your message:' }]);
+function sendMessage(userId) {
+  inquirer
+    .prompt([{ type: 'input', name: 'message', message: 'Enter your message:' }])
+    .then(answer => {
+      const messageContent = answer.message.trim();
+      if (messageContent.length === 0) {
+        console.log('Message cannot be empty.');
+        promptUserAction();
+        return;
+      }
 
-  if (!userKey) {
-    console.error('Error: User key is missing.');
-    return;
-  }
-
-  // Logging the message content for debugging
-  console.log('Sending message:', message);
-
-  socket.emit('sendMessage', { receiverId: userId, content: message, key: userKey }, response => {
-    if (response.status === 'error') {
-      console.error('Message sending error:', response.message);
-    } else {
-      console.log('Message sent successfully.');
-      promptUserAction();
-    }
-  });
+      socket.emit('sendMessage', { receiverId: userId, content: messageContent, key: userKey }, response => {
+        if (response.status === 'error') {
+          console.error('Message sending error:', response.message);
+        } else {
+          console.log('Message sent successfully.');
+          // Ask if the user wants to send another message or return to main action menu
+          inquirer
+            .prompt([{ type: 'confirm', name: 'sendAnother', message: 'Do you want to send another message?', default: false }])
+            .then(answer => {
+              if (answer.sendAnother) {
+                sendMessage(userId); // Send another message
+              } else {
+                promptUserAction(); // Return to main action menu
+              }
+            });
+        }
+      });
+    });
 }
+
 
 
 // Function to handle listing conversations
