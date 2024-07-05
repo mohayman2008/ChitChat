@@ -23,7 +23,7 @@ async function init() {
     /* const user1 = await User.create({
       name: 'user1',
       email: 'user1@example.com',
-      password: 'password1',
+      password: 'pass1',
       ipVersion: 4,
       ip: '192.168.0.1', // Example IP address
       port: 8080, // Example port
@@ -33,7 +33,7 @@ async function init() {
     const user2 = await User.create({
       name: 'user2',
       email: 'user2@example.com',
-      password: 'password2',
+      password: 'pass2',
       ipVersion: 4,
       ip: '192.168.0.2', // Example IP address
       port: 800, // Example port
@@ -62,6 +62,7 @@ async function init() {
     });
     console.log('Messages exchanged:', message1.toJSON(), message2.toJSON()); */
 
+    // await (await User.findOne({ where: { name: 'userX' } })).destroy({ force: true });
     const userX = await User.create({
       name: 'userX',
       email: 'userX@example.com',
@@ -75,6 +76,8 @@ async function init() {
  
     const user1 = await User.findByPk(USER1_Id);
     const user2 = await User.findByPk(USER2_Id);
+    // await user1.update({ password: 'pass1' });
+    // await user2.update({ password: 'pass2' });
     console.log('Users retrieved:', user1.toJSON(), '\n', user2.toJSON(), '\n');
 
     const conversation = await Conversation.findByPk(CONV_ID, {include: Message });

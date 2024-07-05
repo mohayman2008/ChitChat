@@ -54,7 +54,9 @@ io.on('connection', socket => {
   // client event emitter should pass a callback as the last arg,
   //  that call back will be called with the response
   socket.on('signUp', AuthController.signUp); /* fix isssues */
-  socket.on('login', AuthController.authenticate);
+  socket.on('login', (data, cb) => {
+    AuthController.authenticate(socket, data, cb);
+  });
   socket.on('disconnect', AuthController.signOut); /* //////////////////// */
 
   socket.on('getUsers', QueryController.getUsers);
