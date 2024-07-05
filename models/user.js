@@ -38,7 +38,7 @@ export default class User extends Model {
           attributes: ['id', 'name', 'status'],
         },
       ],
-    }
+    };
     if (typeof limit === 'number') queryOptions.limit = limit;
     const result = await Conversation.findAll(queryOptions);
     return result;

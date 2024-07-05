@@ -1,31 +1,8 @@
-// import io from 'socket.io-client';
-// import readline from 'readline';
-
-// const socket = io('http://localhost:3000');
-
 // socket.on('connect', () => {
 //   console.log('Connected to server');
 // });
 
-
-// socket.on('message', (data)=>{
-//     console.log(data)
-// });
-
-// socket.on('chat', (data)=>{
-//     console.log(data)
-// });
-
-// const rl = readline.createInterface({
-//   input: process.stdin,
-//   output: process.stdout
-// });
-
-// rl.on('line', (input) => {
-//   socket.emit('chat', input);
-// });
-
-
+/* eslint-disable no-unused-vars */
 import io from 'socket.io-client';
 import inquirer from 'inquirer';
 
@@ -147,26 +124,30 @@ async function promptUserAction() {
       ]
     }
   ]);
-
+  
   switch (action) {
-    case '1':
-      listUsers();
-      break;
-    case '2':
-      listConversations();
-      break;
-    case '3':
-      const { username } = await inquirer.prompt([{ type: 'input', name: 'username', message: 'Enter username to chat with:' }]);
-      // Assuming username is the ID of the user to chat with
-      sendMessage(username);
-      break;
-    case '4':
-      console.log('Exiting...');
-      process.exit(0);
-      break;
-    default:
-      console.log('Invalid option.');
-      promptUserAction();
+  case '1':
+    listUsers();
+    break;
+  case '2':
+    listConversations();
+    break;
+  case '3':
+    const { username } = await inquirer.prompt([{ // eslint-disable-line no-case-declarations
+      type: 'input',
+      name: 'username',
+      message: 'Enter username to chat with:'
+    }]);
+    // Assuming username is the ID of the user to chat with
+    sendMessage(username);
+    break;
+  case '4':
+    console.log('Exiting...');
+    process.exit(0);
+    break;
+  default:
+    console.log('Invalid option.');
+    promptUserAction();
   }
 }
 
@@ -183,17 +164,17 @@ async function initialPrompt() {
       ]
     }
   ]);
-
+  
   switch (action) {
-    case '1':
-      handleSignUp();
-      break;
-    case '2':
-      handleLogin();
-      break;
-    default:
-      console.log('Invalid option.');
-      process.exit(0);
+  case '1':
+    handleSignUp();
+    break;
+  case '2':
+    handleLogin();
+    break;
+  default:
+    console.log('Invalid option.');
+    process.exit(0);
   }
 }
 

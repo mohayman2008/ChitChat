@@ -1,9 +1,12 @@
 import { Op } from 'sequelize';
+import { validate as isUUID } from 'uuid';
 const { and, or } = Op;
 
-import { User, UserStatus } from '../models/models.js';
+import { User, Conversation, Message } from '../models/models.js';
+import AuthController from '../controllers/AuthController.js';
+const { verifyKey } = AuthController;
 
-export default class ChatController {
+class ChatController {
   static async sendMessageToConversation(convId, senderId, content) {
     const conversation = await Conversation.findByPk(convId, {
       where: {
@@ -19,31 +22,35 @@ export default class ChatController {
     } else {
       receiverId = conversation.user1Id;
     }
-    data.receiverId = receiverId;
-    const message = await conversation.createMessage({
-      content: message,
-      senderId,
-      receiverId,
-    }, {
-      attributes: { exclude: ['senderId', 'receiverId', 'deleted_at'] },
-      include: [
-        {
-          model: User,
-          required: false,
-          as: 'receiver',
-          attributes: ['id', 'name'],
-        }
-      ],
-    });
+
+    const message = await Message.findByPk(
+      (await conversation.createMessage({ content, senderId, receiverId,})).id, 
+      {
+        attributes: { exclude: ['senderId', 'receiverId', 'deleted_at'] },
+        include: [
+          {
+            model: User,
+            required: false,
+            as: 'receiver',
+            attributes: ['id', 'name'],
+          }
+        ],
+      }
+    );
+
+    console.log(message.toJSON());
 
     return {
       response: message.toJSON(),
       messageId: message.id,
-      receiverId: receiverId,
+      receiverId,
     };
   }
 
   static async sendMessageToUser(senderId, receiverId, content) {
+    if (receiverId === senderId) {
+      return { status: 'error', message: 'Receiver can\'t be the sender' };
+    }
     const conversation = await Conversation.findOrCreate({
       where: {
         [or]: [
@@ -60,7 +67,7 @@ export default class ChatController {
       return { status: 'error', message: 'Conversation couldn\'t be found or created' };
     }
     const message = await conversation.createMessage({
-      content: message,
+      content,
       senderId,
       receiverId,
     }, {
@@ -78,11 +85,11 @@ export default class ChatController {
     return {
       response: message.toJSON(),
       messageId: message.id,
-      receiverId: receiverId,
+      receiverId,
     };
   }
 
-  static async sendMessage(data, cb, socket, onlineUsers) {
+  static async sendMessage(sockets, data, cb) {
     if (!data || !data.key) {
       return cb({
         status: 'error',
@@ -113,22 +120,23 @@ export default class ChatController {
         });
       }
       result = await this.sendMessageToConversation(data.conversationId, user.id, content);
-      cb(result.response);
+      cb(result.response || result);
     } else if (data.receiverId) {
-      if (!isUUID(data.conversationId)) {
+      if (!isUUID(data.receiverId)) {
         return cb({
           status: 'error',
           message: 'invalid receiverId',
         });
       }
-      result = this.sendMessageToUser(user.id, receiverId, content);
-      cb(result.response);
+      result = await this.sendMessageToUser(user.id, data.receiverId, content);
+      cb(result.response || result);
     } else {
       return cb({
         status: 'error',
         message: 'invalid request: Either conversationId or receiverId should be provided',
       });
     }
+
     const message = await Message.findByPk(result.messageId, {
       attributes: { exclude: ['senderId', 'receiverId', 'deleted_at'] },
       include: [
@@ -140,6 +148,13 @@ export default class ChatController {
         }
       ],
     });
-    // otherSocket.emit('new message', message.toJSON());
+
+    const receiverId = result.receiverId;
+    for (const socket of sockets.values()) {
+      if (socket.userId === receiverId) {
+        socket.emit('new message', message.toJSON());
+      }
+    }
   }
 }
+export default ChatController;

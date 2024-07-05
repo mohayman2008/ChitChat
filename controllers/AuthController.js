@@ -5,7 +5,6 @@ import { User, UserStatus } from '../models/models.js';
 // import { sockets } from '../server/server.js';
 
 export default class AuthController {
-
   static async signUp(data, cb) {
     for (const key of ['name', 'email', 'password']) {
       if (!data[key]) {
@@ -81,14 +80,6 @@ export default class AuthController {
   }
 
   static async signOut() {}
-
-  static getOnlineUserSocket(onlineUsers, userId) {
-    const result = onlineUsers.filter(obj => obj.userId === userId);
-    if (!result.length) {
-      return null;
-    }
-    return sockets.get(result[0].id);
-  }
 }
 
 /* 
