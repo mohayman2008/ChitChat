@@ -1,3 +1,4 @@
+import { hashSync } from 'bcrypt';
 import { Op, Model, DataTypes } from 'sequelize';
 const { or } = Op;
 
@@ -66,6 +67,9 @@ User.init(
     password: {
       type: DataTypes.STRING,
       allowNull: false,
+      set(pw) {
+        this.setDataValue('password', hashSync(pw, 10));
+      }
     },
     picture: {
       type: DataTypes.TEXT,
