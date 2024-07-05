@@ -8,7 +8,7 @@ import AuthController from '../controllers/AuthController.js';
 import QueryController from '../controllers/QueryController.js';
 import ChatController from '../controllers/ChatController.js';
 
-dbStorage.sync({ force: false, alter: true }).then(() => {
+dbStorage.sync({ force: true, alter: true }).then(() => {
   console.log('Database & tables created!');
 });
 
@@ -31,13 +31,14 @@ io.use(async (socket, next) => {
     socket.session = session;
     socket.key = key;
     socket.user = session.user;
+    console.log('User authenticated:', socket.user); // Add logging here
   }
   next();
 });
 
 // Event listener for new connections
 io.on('connection', socket => {
-  console.log(`User connected: ${socket.key}`);
+  console.log(`User connected: ${socket.id}`);
 
   if (socket.authorized) {
     socket.emit('session', {
