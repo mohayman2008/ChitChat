@@ -7,8 +7,9 @@ import io from 'socket.io-client';
 import inquirer from 'inquirer';
 
 const socket = io('http://localhost:3000');
-
+let sessionKey = ''; // Variable to store session key after login
 let username = '';
+let userKey = null;
 let isAuthenticated = false;
 
 // Function to handle signup
@@ -25,13 +26,13 @@ async function handleSignUp() {
     } else {
       console.log('Signup successful:', response);
       username = answers.name; // Set the global username variable
+      userKey = response.key;
       console.log('Now please login:');
       handleLogin();
     }
   });
 }
 
-// Function to handle login
 // Function to handle login
 async function handleLogin() {
   let loginSuccessful = false;
@@ -52,9 +53,12 @@ async function handleLogin() {
       if (response.status === 'error') {
         console.error('Login Error:', response.message);
       } else {
-        console.log('Login successful:', response);
+        console.log(`Login successful:`, response);
         isAuthenticated = true; // Set authentication flag to true upon successful login
-        username = response.name; // Set username
+        username = response.user.name; // Set username
+        userKey = response.key; // Store the key
+        sessionKey = response.key; // Store session key
+       
         loginSuccessful = true; // Exit the loop
         promptUserAction();
       }
@@ -67,7 +71,8 @@ async function handleLogin() {
 
 // Function to list users
 function listUsers() {
-  socket.emit('getUsers', {}, response => {
+  const data = { key: sessionKey }; // Use sessionKey for authentication
+  socket.emit('getUsers', data, response => {
     if (response.status === 'error') {
       console.error('Error fetching users:', response.message);
     } else {
@@ -83,8 +88,16 @@ function listUsers() {
 // Function to handle sending messages
 async function sendMessage(userId) {
   const { message } = await inquirer.prompt([{ type: 'input', name: 'message', message: 'Enter your message:' }]);
-  
-  socket.emit('sendMessage', { to: userId, message }, response => {
+
+  if (!userKey) {
+    console.error('Error: User key is missing.');
+    return;
+  }
+
+  // Logging the message content for debugging
+  console.log('Sending message:', message);
+
+  socket.emit('sendMessage', { receiverId: userId, content: message, key: userKey }, response => {
     if (response.status === 'error') {
       console.error('Message sending error:', response.message);
     } else {
@@ -94,9 +107,10 @@ async function sendMessage(userId) {
   });
 }
 
+
 // Function to handle listing conversations
 function listConversations() {
-  socket.emit('getConversations', {}, response => {
+  socket.emit('getConversations', { key: userKey}, response => {
     if (response.status === 'error') {
       console.error('Error fetching conversations:', response.message);
     } else {

@@ -1,3 +1,4 @@
+
 import { Op } from 'sequelize';
 import { validate as isUUID } from 'uuid';
 const { or, ne } = Op;
@@ -7,6 +8,7 @@ import { User, Conversation } from '../models/models.js';
 const { verifyKey } = AuthController;
 
 export default class QueryController {
+
   static async getUsers(data, cb) {
     if (!data || !data.key) {
       return cb({
@@ -14,6 +16,7 @@ export default class QueryController {
         message: 'key-token is missing',
       });
     }
+
     const user = await verifyKey(data.key);
     if (!user) {
       return cb({
@@ -22,14 +25,21 @@ export default class QueryController {
       });
     }
 
-    const result = await User.findAll(
-      {
+    try {
+      const result = await User.findAll({
         attributes: ['id', 'name', 'picture', 'status'],
       });
-    return cb({
-      status: 'OK',
-      result: result.map(obj => obj.toJSON()),
-    });
+
+      cb({
+        status: 'OK',
+        users: result.map(user => user.toJSON()),
+      });
+    } catch (error) {
+      cb({
+        status: 'error',
+        message: 'Error fetching users',
+      });
+    }
   }
 
   static async getConversations(data, cb) {
@@ -39,6 +49,7 @@ export default class QueryController {
         message: 'key-token is missing',
       });
     }
+
     const user = await verifyKey(data.key);
     if (!user) {
       return cb({
@@ -46,8 +57,10 @@ export default class QueryController {
         message: 'Authentication failed',
       });
     }
+
     const offset = data.page || 0;
     const limit = data.pageSize || 30;
+
     if ((typeof offset !== 'number' && offset >= 0) || (typeof limit !== 'number' && limit > 0)) {
       return cb({
         status: 'error',
@@ -55,10 +68,49 @@ export default class QueryController {
       });
     }
 
-    return cb({
-      status: 'OK',
-      result: (await user.getConversations(offset, limit)).map(obj => obj.toJSON()),
-    });
+    try {
+      const conversations = await Conversation.findAll({
+        where: {
+          [or]: [
+            { user1Id: user.id },
+            { user2Id: user.id },
+          ],
+          deleted_at: null,
+        },
+        offset,
+        limit,
+        include: [
+          {
+            model: User,
+            as: 'user1',
+            attributes: ['id', 'name'],
+          },
+          {
+            model: User,
+            as: 'user2',
+            attributes: ['id', 'name'],
+          }
+        ],
+      });
+
+      const result = conversations.map(conversation => {
+        const otherUser = conversation.user1Id === user.id ? conversation.user2 : conversation.user1;
+        return {
+          id: conversation.id,
+          user: otherUser.toJSON(),
+        };
+      });
+
+      cb({
+        status: 'OK',
+        conversations: result,
+      });
+    } catch (error) {
+      cb({
+        status: 'error',
+        message: 'Error fetching conversations',
+      });
+    }
   }
 
   static async getMessages(data, cb) {
@@ -68,6 +120,7 @@ export default class QueryController {
         message: 'key-token is missing',
       });
     }
+
     const user = await verifyKey(data.key);
     if (!user) {
       return cb({
@@ -75,12 +128,14 @@ export default class QueryController {
         message: 'Authentication failed',
       });
     }
+
     if (!data.conversationId) {
       return cb({
         status: 'error',
         message: 'conversationId is missing',
       });
     }
+
     if (!isUUID(data.conversationId)) {
       return cb({
         status: 'error',
@@ -88,45 +143,61 @@ export default class QueryController {
       });
     }
 
-    const conversation = await Conversation.findByPk(data.conversationId, {
-      where: {
-        [or]: [
-          { user1Id: user.id },
-          { user2Id: user.id },
+    try {
+      const conversation = await Conversation.findByPk(data.conversationId, {
+        where: {
+          [or]: [
+            { user1Id: user.id },
+            { user2Id: user.id },
+          ],
+          deleted_at: null,
+        },
+        include: [
+          {
+            model: User,
+            as: 'user1',
+            attributes: ['id', 'name'],
+          },
+          {
+            model: User,
+            as: 'user2',
+            attributes: ['id', 'name'],
+          }
         ],
-        deleted_at: null,
+      });
+
+      if (!conversation) {
+        return cb({
+          status: 'error',
+          message: 'invalid conversationId',
+        });
       }
-    });
-    if (!conversation) {
-      return cb({
+
+      const messages = await conversation.getMessages({
+        attributes: { exclude: ['senderId', 'receiverId', 'deleted_at'] },
+        include: [
+          {
+            model: User,
+            as: 'sender',
+            attributes: ['id', 'name'],
+          },
+          {
+            model: User,
+            as: 'receiver',
+            attributes: ['id', 'name'],
+          }
+        ],
+      });
+
+      cb({
+        status: 'OK',
+        messages: messages.map(message => message.toJSON()),
+      });
+    } catch (error) {
+      cb({
         status: 'error',
-        message: 'invalid conversationId',
+        message: 'Error fetching messages',
       });
     }
-
-    const result = await conversation.getMessages({
-      attributes: { exclude: ['senderId', 'receiverId', 'deleted_at'] },
-      include: [
-        {
-          model: User,
-          required: false,
-          as: 'sender',
-          attributes: ['id', 'name'],
-          where: { id: { [ne]: user.id} },
-        },
-        {
-          model: User,
-          required: false,
-          as: 'receiver',
-          attributes: ['id', 'name'],
-          where: { id: { [ne]: user.id} },
-        }
-      ],
-    });
-
-    return cb({
-      status: 'OK',
-      result: result.map(obj => obj.toJSON()),
-    });
   }
 }

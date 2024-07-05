@@ -5,6 +5,7 @@ import { User, UserStatus, Session } from '../models/models.js';
 // import { sockets } from '../server/server.js';
 
 export default class AuthController {
+
   static async signUp(data, cb) {
     for (const key of ['name', 'email', 'password']) {
       if (!data[key]) {
@@ -46,6 +47,7 @@ export default class AuthController {
   }
 
   static async authenticate(data, cb) {
+    
     for (const key of ['email', 'password']) {
       // missing value error handling
       if (!data[key]) {
@@ -75,6 +77,7 @@ export default class AuthController {
       status: 'OK',
       id: user.id,
       key: session.key,
+      user,
     });
   }
 

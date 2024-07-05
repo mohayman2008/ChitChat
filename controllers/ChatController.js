@@ -7,6 +7,7 @@ import AuthController from '../controllers/AuthController.js';
 const { verifyKey } = AuthController;
 
 class ChatController {
+
   static async sendMessageToConversation(convId, senderId, content) {
     const conversation = await Conversation.findByPk(convId, {
       where: {
@@ -44,16 +45,17 @@ class ChatController {
       receiverId,
     };
   }
+  //sending message to users
 
   static async sendMessageToUser(senderId, receiverId, content) {
     if (receiverId === senderId) {
       return { status: 'error', message: 'Receiver can\'t be the sender' };
     }
-    const conversation = await Conversation.findOrCreate({
+    const [conversation, created] = await Conversation.findOrCreate({
       where: {
         [or]: [
-          { [and]: [{ user1Id: senderId }, { user1Id: receiverId }] },
-          { [and]: [{ user1Id: receiverId }, { user1Id: senderId }] },
+          { [and]: [{ user1Id: senderId }, { user2Id: receiverId }] },
+          { [and]: [{ user1Id: receiverId }, { user2Id: senderId }] },
         ],
       },
       defaults: {
@@ -61,14 +63,19 @@ class ChatController {
         user2Id: receiverId,
       }
     });
+  
     if (!conversation) {
       return { status: 'error', message: 'Conversation couldn\'t be found or created' };
     }
-    const message = await conversation.createMessage({
+  
+    const message = await Message.create({
       content,
       senderId,
       receiverId,
-    }, {
+      conversationId: conversation.id // Make sure to set the conversationId for the message
+    });
+  
+    const savedMessage = await Message.findByPk(message.id, {
       attributes: { exclude: ['senderId', 'receiverId', 'deleted_at'] },
       include: [
         {
@@ -79,15 +86,18 @@ class ChatController {
         }
       ],
     });
-
+  
     return {
-      response: message.toJSON(),
-      messageId: message.id,
+      response: savedMessage.toJSON(),
+      messageId: savedMessage.id,
       receiverId,
     };
   }
+  
 
   static async sendMessage(sockets, data, cb) {
+      // Logging received data for debugging
+   console.log('Received data:', data);
     if (!data || !data.key) {
       return cb({
         status: 'error',
@@ -149,7 +159,7 @@ class ChatController {
 
     const receiverId = result.receiverId;
     for (const socket of sockets.values()) {
-      if (socket.user.id === receiverId) {
+      if (socket.user && socket.user.id === receiverId){
         socket.emit('new message', message.toJSON());
       }
     }
