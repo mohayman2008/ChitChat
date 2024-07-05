@@ -6,10 +6,12 @@
 import io from 'socket.io-client';
 import inquirer from 'inquirer';
 
+// Clear the screen and move the curser to the beginning of the page
+process.stdout.write('\x1b[2J\x1b[0;0f');
+
 const socket = io('http://localhost:3000');
 let sessionKey = ''; // Variable to store session key after login
 let username = '';
-let userKey = null;
 let isAuthenticated = false;
 
 // Function to handle signup
@@ -17,20 +19,43 @@ async function handleSignUp() {
   const answers = await inquirer.prompt([
     { type: 'input', name: 'name', message: 'Enter your username:' },
     { type: 'input', name: 'email', message: 'Enter your email:' },
-    { type: 'password', name: 'password', message: 'Enter your password:' }
+    { type: 'password', name: 'password', message: 'Enter your password:', mask: 'x' },
   ]);
 
-  socket.emit('signUp', answers, response => {
+  socket.timeout(5000).emit('signUp', answers, (err, response) => {
+    if (err) {
+      console.error('Signup Error:', err.message || err.toString(), '\n');
+      return initialPrompt();
+    }
     if (response.status === 'error') {
-      console.error('Signup Error:', response.message);
+      console.error('Signup Error:', response.message, '\n');
+      return initialPrompt();
     } else {
       console.log('Signup successful:', response);
       username = answers.name; // Set the global username variable
-      userKey = response.key;
       console.log('Now please login:');
       handleLogin();
     }
   });
+}
+
+async function tryLoginAgain() {
+  const answers = await inquirer.prompt([{
+    type: 'list',
+    name: 'action',
+    message: 'Choose an action:',
+    choices: [
+      'Try Again',
+      'Go Back to Main Menu'
+    ]}
+  ]);
+
+  if (answers.action === 'Go Back to Main Menu') {
+    initialPrompt();
+    return false;
+  } else if (answers.action === 'Try Again') {
+    return true;
+  }
 }
 
 // Function to handle login
@@ -40,32 +65,28 @@ async function handleLogin() {
   while (!loginSuccessful) {
     const answers = await inquirer.prompt([
       { type: 'input', name: 'email', message: 'Enter your email:' },
-      { type: 'password', name: 'password', message: 'Enter your password:' },
-      { type: 'list', name: 'action', message: 'Choose an action:', choices: ['Try Again', 'Go Back to Main Menu'] }
+      { type: 'password', name: 'password', message: 'Enter your password:', mask: 'x' },
     ]);
 
-    if (answers.action === 'Go Back to Main Menu') {
-      initialPrompt();
+    loginSuccessful = await new Promise((resolve, reject) => {
+      socket.emit('login', answers, response => {
+        if (response.status === 'error') {
+          console.error('Login Error:', response.message);
+          resolve(false);
+        } else {
+          console.log(`Login successful: sessionKey is ${response.key}`, );
+          isAuthenticated = true; // Set authentication flag to true upon successful login
+          username = response.name; // Set username
+          sessionKey = response.key; // Store session key
+          resolve(true);
+        }
+      });
+    });
+    if (loginSuccessful) {
+      return promptUserAction();
+    } else if (!await tryLoginAgain()) {
       return;
     }
-
-    socket.emit('login', answers, response => {
-      if (response.status === 'error') {
-        console.error('Login Error:', response.message);
-      } else {
-        console.log(`Login successful:`, response);
-        isAuthenticated = true; // Set authentication flag to true upon successful login
-        username = response.user.name; // Set username
-        userKey = response.key; // Store the key
-        sessionKey = response.key; // Store session key
-       
-        loginSuccessful = true; // Exit the loop
-        promptUserAction();
-      }
-    });
-
-    // Await a short delay to ensure the server response is handled before looping again
-    await new Promise(resolve => setTimeout(resolve, 500));
   }
 }
 
@@ -97,7 +118,7 @@ function sendMessage(userId) {
         return;
       }
 
-      socket.emit('sendMessage', { receiverId: userId, content: messageContent, key: userKey }, response => {
+      socket.emit('sendMessage', { receiverId: userId, content: messageContent, key: sessionKey }, response => {
         if (response.status === 'error') {
           console.error('Message sending error:', response.message);
         } else {
@@ -121,7 +142,7 @@ function sendMessage(userId) {
 
 // Function to handle listing conversations
 function listConversations() {
-  socket.emit('getConversations', { key: userKey }, response => {
+  socket.emit('getConversations', { key: sessionKey }, response => {
     if (response.status === 'error') {
       console.error('Error fetching conversations:', response.message);
     } else {
@@ -142,7 +163,7 @@ function listConversations() {
         .then(answer => {
           const conversationId = answer.conversationId;
           // Now fetch and display messages for the selected conversationId
-          socket.emit('getMessages', { key: userKey, conversationId }, response => {
+          socket.emit('getMessages', { key: sessionKey, conversationId }, response => {
             if (response.status === 'OK') {
               console.log('Messages in conversation:');
               response.messages.forEach(message => {
