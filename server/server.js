@@ -41,9 +41,13 @@ io.on('connection', socket => {
   console.log(`User connected: ${socket.id}`);
 
   if (socket.authorized) {
+    const { id, name, email, lastLogin } = socket.user;
     socket.emit('session', {
-      sessionId: socket.sessionId,
-      key: socket.userKey,
+      key: socket.key,
+      id,
+      name,
+      email,
+      last_login: lastLogin,
     });
   } else {
     socket.emit('unauthorized', {
