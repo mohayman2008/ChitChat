@@ -6,6 +6,11 @@
 import io from 'socket.io-client';
 import inquirer from 'inquirer';
 
+import DataHandlers from './DataHandlers.js';
+
+// resetTextFG = '\u001b[39m';
+// process.stdout.write(`\x1b[${line};${col}H`); // Set cursor position
+
 // Clear the screen and move the curser to the beginning of the page
 process.stdout.write('\x1b[2J\x1b[0;0f');
 
@@ -22,7 +27,7 @@ async function handleSignUp() {
     { type: 'password', name: 'password', message: 'Enter your password:', mask: 'x' },
   ]);
 
-  socket.timeout(5000).emit('signUp', answers, (err, response) => {
+  socket.timeout(REQ_TIMEOUT).emit('signUp', answers, (err, response) => {
     if (err) {
       console.error('Signup Error:', err.message || err.toString(), '\n');
       return initialPrompt();
@@ -64,11 +69,12 @@ async function handleLogin() {
 
   while (!loginSuccessful) {
     const answers = await inquirer.prompt([
-      { type: 'input', name: 'email', message: 'Enter your email:' },
-      { type: 'password', name: 'password', message: 'Enter your password:', mask: 'x' },
+      /* To do: remove the defaults */
+      { type: 'input', name: 'email', message: 'Enter your email:', default: 'user1@example.com' },
+      { type: 'password', name: 'password', message: 'Enter your password:', mask: 'x', default: 'pass1' },
     ]);
 
-    loginSuccessful = await new Promise((resolve, reject) => {
+    loginSuccessful = await new Promise((resolve) => {
       socket.emit('login', answers, response => {
         if (response.status === 'error') {
           console.error('Login Error:', response.message);
@@ -77,7 +83,9 @@ async function handleLogin() {
           console.log(`Login successful: sessionKey is ${response.key}`, );
           isAuthenticated = true; // Set authentication flag to true upon successful login
           username = response.name; // Set username
-          sessionKey = response.key; // Store session key
+          sessionKey = response.key; // Store session 
+          socket.auth = { sessionKey };
+          socket.userId = response.id;
           resolve(true);
         }
       });
@@ -91,19 +99,15 @@ async function handleLogin() {
 }
 
 // Function to list users
-function listUsers() {
-  const data = { key: sessionKey }; // Use sessionKey for authentication
-  socket.emit('getUsers', data, response => {
-    if (response.status === 'error') {
-      console.error('Error fetching users:', response.message);
-    } else {
-      console.log('List of users:');
-      response.users.forEach(user => {
-        console.log(`${user.id}: ${user.name}`);
-      });
-      promptUserAction();
-    }
+async function listUsers() {
+  const users = await DataHandlers.getUsers(socket, {});
+  if (!users) return false;
+
+  console.log('List of users:');
+  users.forEach(user => {
+    console.log(`${user.id}: ${user.name}`);
   });
+  promptUserAction();
 }
 
 // Function to handle sending messages
@@ -138,46 +142,40 @@ function sendMessage(userId) {
     });
 }
 
+async function listMessages(data) {
+  const messages = await DataHandlers.getMessages(socket, data);
+  if (!messages) return false;
 
+  console.log('Messages in conversation:');
+  messages.forEach(message => {
+    const sender = (message.sender && message.sender.name) || username; 
+    console.log(`${sender}: ${message.content}`);
+  });
+}
 
 // Function to handle listing conversations
-function listConversations() {
-  socket.emit('getConversations', { key: sessionKey }, response => {
-    if (response.status === 'error') {
-      console.error('Error fetching conversations:', response.message);
-    } else {
-      const conversationChoices = response.conversations.map(conversation => ({
-        name: `${conversation.user.name}`,
-        value: conversation.id, // Use conversation ID as value
-      }));
+async function listConversations() {
+  const conversations = await DataHandlers.getConversations(socket);
+  if (!conversations) return false;
 
-      inquirer
-        .prompt([
-          {
-            type: 'list',
-            name: 'conversationId',
-            message: 'Select a conversation:',
-            choices: conversationChoices,
-          },
-        ])
-        .then(answer => {
-          const conversationId = answer.conversationId;
-          // Now fetch and display messages for the selected conversationId
-          socket.emit('getMessages', { key: sessionKey, conversationId }, response => {
-            if (response.status === 'OK') {
-              console.log('Messages in conversation:');
-              response.messages.forEach(message => {
-                console.log(`${message.sender.name}: ${message.content}`);
-              });
-              // Prompt user for further actions like sending a message
-              promptUserAction();
-            } else {
-              console.error('Error fetching messages:', response.message);
-            }
-          });
-        });
-    }
+  const conversationChoices = conversations.map(conversation => {
+    const name = conversation.user1.id === socket.userId ? conversation.user2.name : conversation.user1.name;
+    return {
+      name: name,
+      value: conversation.id, // Use conversation ID as value
+    };
   });
+
+  const { conversationId } = await inquirer.prompt([{
+    type: 'rawlist',
+    name: 'conversationId',
+    message: 'Select a conversation:',
+    choices: conversationChoices,
+  }]);
+  // Then fetch and display messages for the selected conversationId
+  await listMessages({ conversationId });
+  // Prompt user for further actions like sending a message
+  promptUserAction();
 }
 
 // Function to prompt user action
