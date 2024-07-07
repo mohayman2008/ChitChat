@@ -5,19 +5,12 @@ const { or, ne } = Op;
 
 import AuthController from '../controllers/AuthController.js';
 import { User, Conversation } from '../models/models.js';
-const { verifyKey } = AuthController;
+const { checkSession, verifyKey } = AuthController;
 
 export default class QueryController {
 
-  static async getUsers(data, cb) {
-    if (!data || !data.key) {
-      return cb({
-        status: 'error',
-        message: 'key-token is missing',
-      });
-    }
-
-    const user = await verifyKey(data.key);
+  static async getUsers(socket, data, cb) {
+    const user = checkSession(socket);
     if (!user) {
       return cb({
         status: 'error',
@@ -26,13 +19,14 @@ export default class QueryController {
     }
 
     try {
-      const result = await User.findAll({
+      const users = await User.findAll({
+        where: { id: { [ne]: user.id }},
         attributes: ['id', 'name', 'picture', 'status'],
       });
 
       cb({
         status: 'OK',
-        users: result.map(user => user.toJSON()),
+        results: users.map(user => user.toJSON()),
       });
     } catch (error) {
       cb({
@@ -42,15 +36,8 @@ export default class QueryController {
     }
   }
 
-  static async getConversations(data, cb) {
-    if (!data || !data.key) {
-      return cb({
-        status: 'error',
-        message: 'key-token is missing',
-      });
-    }
-
-    const user = await verifyKey(data.key);
+  static async getConversations(socket, data, cb) {
+    const user = checkSession(socket);
     if (!user) {
       return cb({
         status: 'error',
@@ -69,41 +56,10 @@ export default class QueryController {
     }
 
     try {
-      const conversations = await Conversation.findAll({
-        where: {
-          [or]: [
-            { user1Id: user.id },
-            { user2Id: user.id },
-          ],
-          deleted_at: null,
-        },
-        offset,
-        limit,
-        include: [
-          {
-            model: User,
-            as: 'user1',
-            attributes: ['id', 'name'],
-          },
-          {
-            model: User,
-            as: 'user2',
-            attributes: ['id', 'name'],
-          }
-        ],
-      });
-
-      const result = conversations.map(conversation => {
-        const otherUser = conversation.user1Id === user.id ? conversation.user2 : conversation.user1;
-        return {
-          id: conversation.id,
-          user: otherUser.toJSON(),
-        };
-      });
-
+      const conversations = await user.getConversations(offset, limit);
       cb({
         status: 'OK',
-        conversations: result,
+        results: conversations.map(conv => conv.toJSON()),
       });
     } catch (error) {
       cb({
@@ -113,15 +69,8 @@ export default class QueryController {
     }
   }
 
-  static async getMessages(data, cb) {
-    if (!data || !data.key) {
-      return cb({
-        status: 'error',
-        message: 'key-token is missing',
-      });
-    }
-
-    const user = await verifyKey(data.key);
+  static async getMessages(socket, data, cb) {
+    const user = checkSession(socket);
     if (!user) {
       return cb({
         status: 'error',
@@ -152,18 +101,6 @@ export default class QueryController {
           ],
           deleted_at: null,
         },
-        include: [
-          {
-            model: User,
-            as: 'user1',
-            attributes: ['id', 'name'],
-          },
-          {
-            model: User,
-            as: 'user2',
-            attributes: ['id', 'name'],
-          }
-        ],
       });
 
       if (!conversation) {
@@ -178,20 +115,24 @@ export default class QueryController {
         include: [
           {
             model: User,
+            required: false,
             as: 'sender',
             attributes: ['id', 'name'],
+            where: { id: { [ne]: user.id} },
           },
           {
             model: User,
+            required: false,
             as: 'receiver',
             attributes: ['id', 'name'],
+            where: { id: { [ne]: user.id} },
           }
         ],
       });
 
       cb({
         status: 'OK',
-        messages: messages.map(message => message.toJSON()),
+        results: messages.map(message => message.toJSON()),
       });
     } catch (error) {
       cb({

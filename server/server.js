@@ -8,7 +8,7 @@ import AuthController from '../controllers/AuthController.js';
 import QueryController from '../controllers/QueryController.js';
 import ChatController from '../controllers/ChatController.js';
 
-dbStorage.sync({ force: true, alter: true }).then(() => {
+dbStorage.sync({ force: false, alter: true }).then(() => {
   console.log('Database & tables created!');
 });
 
@@ -20,7 +20,7 @@ const io = new Server(httpServer, {
   // Options can go here
 });
 io.use(async (socket, next) => {
-  const key = socket.handshake.auth.key;
+  const key = socket.handshake.auth.sessionKey;
   if (key) {
     const session = await Session.findByPk(key, { include: ['user'] });
     if (!session) {
@@ -31,7 +31,7 @@ io.use(async (socket, next) => {
     socket.session = session;
     socket.key = key;
     socket.user = session.user;
-    console.log('User authenticated:', socket.user); // Add logging here
+    // console.log('User authenticated:', socket.user.toJSON());
   }
   next();
 });
@@ -63,9 +63,17 @@ io.on('connection', socket => {
   });
   socket.on('disconnect', AuthController.signOut); /* //////////////////// */
 
-  socket.on('getUsers', QueryController.getUsers);
-  socket.on('getConversations', QueryController.getConversations);
-  socket.on('getMessages', QueryController.getMessages);
+  socket.on('getUsers', (data, cb) => {
+    QueryController.getUsers(socket, data, cb);
+  });
+
+  socket.on('getConversations', (data, cb) => {
+    QueryController.getConversations(socket, data, cb);
+  });
+
+  socket.on('getMessages', (data, cb) => {
+    QueryController.getMessages(socket, data, cb);
+  });
 
   socket.on('sendMessage', (data, cb) => {
     ChatController.sendMessage(io.sockets.sockets, data, cb);

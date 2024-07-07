@@ -40,24 +40,18 @@ export default class AuthController {
     });
   }
 
-  static async verifyKey(key) {
-    if (!isUUID(key)) return null;
-
-    const session = await Session.findByPk(key, { include: ['user'] });
-
-    if (!session) return null;
-
-    session.user.update({ lastLogin: new Date()}); // Don't add await so as not to affect the performance
-    return session.user;
-  }
- 
-  static updateLastLogin(socket) {
+  static checkSession(socket) {
     socket.user && socket.user.update({ lastLogin: new Date()});
+    if (socket.key) { return socket.user; }
+    else {
+      socket.emit('unauthorized', { message: 'Unauthorized access' });
+      return null;
+    }
   }
 
   static async authenticate(socket, data, cb) {
-    let user = socket.user;
-    if (socket.key && socket.user) {
+    let user = AuthController.checkSession(socket);
+    if (user) {
       return cb({ status: 'error', message: 'Already authenticated, sign out first' });
     }
     socket.authorized = false;
@@ -67,7 +61,6 @@ export default class AuthController {
     for (const key of ['email', 'password']) {
       // missing value error handling
       if (!data[key]) {
-        updateLastLogin(socket);
         return cb({ status: 'error', message: `${key} is mandatory` });
       }
     }
