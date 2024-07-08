@@ -1,8 +1,7 @@
 import { createServer } from 'http';
 import { Server } from 'socket.io';
-import { v4 as uuidv4 } from 'uuid';
 
-import { Session, User } from '../models/models.js';
+import { Session } from '../models/models.js';
 import dbStorage from '../config/db.js';
 import AuthController from '../controllers/AuthController.js';
 import QueryController from '../controllers/QueryController.js';
@@ -38,7 +37,7 @@ io.use(async (socket, next) => {
 
 // Event listener for new connections
 io.on('connection', socket => {
-  console.log(`User connected: ${socket.id}`);
+  console.log(`User connected: ${socket.key|| 'Not authenticated'}`);
 
   if (socket.authorized) {
     const { id, name, email, lastLogin } = socket.user;
@@ -76,7 +75,7 @@ io.on('connection', socket => {
   });
 
   socket.on('sendMessage', (data, cb) => {
-    ChatController.sendMessage(io.sockets.sockets, data, cb);
+    ChatController.sendMessage(socket, data, cb);
   });
 
   // Event listener for disconnection

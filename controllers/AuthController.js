@@ -1,8 +1,6 @@
 import { compare as compareHash } from 'bcrypt';
-import { v4 as uuidv4, validate as isUUID } from 'uuid';
 
-import { User, UserStatus, Session } from '../models/models.js';
-// import { sockets } from '../server/server.js';
+import { User, UserStatus } from '../models/models.js';
 
 export default class AuthController {
 

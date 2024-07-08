@@ -1,5 +1,4 @@
-import { Op, Model, DataTypes } from 'sequelize';
-const { or } = Op;
+import { Model, DataTypes } from 'sequelize';
 
 import dbStorage from '../config/db.js';
 import { updateById, deleteById } from './modelsHelperMethods.js';

@@ -4,14 +4,14 @@ const { and, or } = Op;
 
 import { User, Conversation, Message } from '../models/models.js';
 import AuthController from '../controllers/AuthController.js';
-const { verifyKey } = AuthController;
+const { checkSession } = AuthController;
 
-class ChatController {
+export default class ChatController {
 
   static async sendMessageToConversation(convId, senderId, content) {
     const conversation = await Conversation.findByPk(convId, {
       where: {
-        [or]: [{ user1Id: senderId }, { user1Id: senderId }],
+        [or]: [{ user1Id: senderId }, { user2Id: senderId }],
       }
     });
     if (!conversation) {
@@ -25,7 +25,7 @@ class ChatController {
     }
 
     const message = await Message.findByPk(
-      (await conversation.createMessage({ content, senderId, receiverId,})).id, 
+      (await conversation.createMessage({ content, senderId, receiverId })).id,
       {
         attributes: { exclude: ['senderId', 'receiverId', 'deleted_at'] },
         include: [
@@ -45,13 +45,12 @@ class ChatController {
       receiverId,
     };
   }
-  //sending message to users
 
   static async sendMessageToUser(senderId, receiverId, content) {
     if (receiverId === senderId) {
       return { status: 'error', message: 'Receiver can\'t be the sender' };
     }
-    const [conversation, created] = await Conversation.findOrCreate({
+    const [conversation] = await Conversation.findOrCreate({
       where: {
         [or]: [
           { [and]: [{ user1Id: senderId }, { user2Id: receiverId }] },
@@ -68,19 +67,13 @@ class ChatController {
       return { status: 'error', message: 'Conversation couldn\'t be found or created' };
     }
   
-    const message = await Message.create({
-      content,
-      senderId,
-      receiverId,
-      conversationId: conversation.id // Make sure to set the conversationId for the message
-    });
+    const createdMessage = await conversation.createMessage({ content, senderId, receiverId });
   
-    const savedMessage = await Message.findByPk(message.id, {
+    const message = await Message.findByPk(createdMessage.id, {
       attributes: { exclude: ['senderId', 'receiverId', 'deleted_at'] },
       include: [
         {
           model: User,
-          required: false,
           as: 'receiver',
           attributes: ['id', 'name'],
         }
@@ -88,29 +81,21 @@ class ChatController {
     });
   
     return {
-      response: savedMessage.toJSON(),
-      messageId: savedMessage.id,
+      response: message,
+      messageId: message.id,
       receiverId,
     };
   }
-  
 
-  static async sendMessage(sockets, data, cb) {
-      // Logging received data for debugging
-   console.log('Received data:', data);
-    if (!data || !data.key) {
-      return cb({
-        status: 'error',
-        message: 'key-token is missing',
-      });
-    }
-    const user = await verifyKey(data.key);
+  static async sendMessage(socket, data, cb) {
+    const user = checkSession(socket);
     if (!user) {
       return cb({
         status: 'error',
         message: 'Authentication failed',
       });
     }
+
     const content = data.content;
     if (!content || content.trim().length ===0) {
       return cb({
@@ -157,6 +142,7 @@ class ChatController {
       ],
     });
 
+    const sockets = socket.nsp.sockets;
     const receiverId = result.receiverId;
     for (const socket of sockets.values()) {
       if (socket.user && socket.user.id === receiverId){
@@ -165,4 +151,3 @@ class ChatController {
     }
   }
 }
-export default ChatController;

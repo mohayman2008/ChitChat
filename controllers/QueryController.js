@@ -5,7 +5,7 @@ const { or, ne } = Op;
 
 import AuthController from '../controllers/AuthController.js';
 import { User, Conversation } from '../models/models.js';
-const { checkSession, verifyKey } = AuthController;
+const { checkSession } = AuthController;
 
 export default class QueryController {
 
