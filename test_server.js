@@ -23,19 +23,19 @@ const session2 = (await Session.findOrCreate({
 
 const socket2 = await io('http://localhost:3000', {
   // auth: { sessionId: 'ede26cd5-a63f-47f3-9468-f7df17ce8738' },
-  auth: { key: 'ede26cd5-a63f-47f3-9468-f7df17ce8738' },
+  auth: { sessionKey: 'ede26cd5-a63f-47f3-9468-f7df17ce8738' },
 });
 
 const socket = await io('http://localhost:3000', {
   // auth: { sessionId: '78849577-dee8-4bf8-8d14-c6b663213303' },
-  auth: { key: '78849577-dee8-4bf8-8d14-c6b663213303' },
+  auth: { sessionKey: '78849577-dee8-4bf8-8d14-c6b663213303' },
 });
 
 socket.timeout(5000).emit('sendMessage', {
   key: '78849577-dee8-4bf8-8d14-c6b663213303',
   content: 'hello',
-  conversationId: '8c13f164-dd7a-4e4f-9903-92cefe1b7400',
-  // receiverId: 'd80d582c-0d58-413d-8d44-c51f3b2011fb',
+  // conversationId: '8c13f164-dd7a-4e4f-9903-92cefe1b7400',
+  receiverId: 'd80d582c-0d58-413d-8d44-c51f3b2011fb',
 }, (err, data) => {
   if (err) {
     console.error('Error sending message:', err);
@@ -49,3 +49,6 @@ socket2.on('new message', (data) => {
 });
 
 Message.destroy({ where: { content: 'hello' }, force: true });
+Message.destroy({ where: { content: 'hellp' }, force: true });
+Message.destroy({ where: { content: 'New' }, force: true });
+Message.destroy({ where: { content: 'My message' }, force: true });

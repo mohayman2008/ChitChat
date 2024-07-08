@@ -8,7 +8,9 @@ import inquirer from 'inquirer';
 
 import DataHandlers from './DataHandlers.js';
 
-// resetTextFG = '\u001b[39m';
+const REQ_TIMEOUT = 5000;
+
+// resetTextFG = '\x1b[39m';
 // process.stdout.write(`\x1b[${line};${col}H`); // Set cursor position
 
 // Clear the screen and move the curser to the beginning of the page
@@ -18,6 +20,16 @@ const socket = io('http://localhost:3000');
 let sessionKey = ''; // Variable to store session key after login
 let username = '';
 let isAuthenticated = false;
+
+socket.on('new message', (message) => {
+  const from = message.sender.name;
+  const content = message.content;
+  let str = '\n\x1b[36mNew message from ';
+  str += `\x1b[33m${from}`;
+  str += '\x1b[36m: ';
+  str += `\x1b[32m${content}\x1b[39m`;
+  console.log(str);
+});
 
 // Function to handle signup
 async function handleSignUp() {
@@ -70,8 +82,8 @@ async function handleLogin() {
   while (!loginSuccessful) {
     const answers = await inquirer.prompt([
       /* To do: remove the defaults */
-      { type: 'input', name: 'email', message: 'Enter your email:', default: 'user1@example.com' },
-      { type: 'password', name: 'password', message: 'Enter your password:', mask: 'x', default: 'pass1' },
+      { type: 'input', name: 'email', message: 'Enter your email:', /* default: 'user1@example.com' */ },
+      { type: 'password', name: 'password', message: 'Enter your password:', mask: 'x', /* default: 'pass1' */ },
     ]);
 
     loginSuccessful = await new Promise((resolve) => {
@@ -110,36 +122,50 @@ async function listUsers() {
   promptUserAction();
 }
 
+async function sendNewMessagePrompt() {
+  return (await inquirer.prompt([{
+    type: 'confirm',
+    name: 'newMessage',
+    message: 'Do you want to send another message?',
+    default: false
+  }])).newMessage;
+}
+
 // Function to handle sending messages
-function sendMessage(userId) {
-  inquirer
-    .prompt([{ type: 'input', name: 'message', message: 'Enter your message:' }])
-    .then(answer => {
-      const messageContent = answer.message.trim();
-      if (messageContent.length === 0) {
-        console.log('Message cannot be empty.');
-        promptUserAction();
-        return;
+async function sendMessage(data) {
+  const { message } = await inquirer.prompt([{ type: 'input', name: 'message', message: 'Enter your message:' }]);
+  const messageContent = message.trim();
+
+  if (messageContent.length === 0) {
+    console.log('Message cannot be empty.');
+    const sendNewMessage = await sendNewMessagePrompt();
+    if (sendNewMessage) {
+      return sendMessage(data); // Send another message
+    } else {
+      return false; // Return to main action menu
+    }
+  }
+
+  data.content = messageContent; 
+
+  return new Promise((resolve) => {
+    socket.timeout(REQ_TIMEOUT).emit('sendMessage', data, async (err, response) => {
+      if (err || response.status === 'error') {
+        const errMsg = err ? err.message || err.toString() : response.message;
+        console.error(`Message sending error: ${errMsg}\n`);
+      } else {
+        console.log('Message sent successfully.');
       }
 
-      socket.emit('sendMessage', { receiverId: userId, content: messageContent, key: sessionKey }, response => {
-        if (response.status === 'error') {
-          console.error('Message sending error:', response.message);
-        } else {
-          console.log('Message sent successfully.');
-          // Ask if the user wants to send another message or return to main action menu
-          inquirer
-            .prompt([{ type: 'confirm', name: 'sendAnother', message: 'Do you want to send another message?', default: false }])
-            .then(answer => {
-              if (answer.sendAnother) {
-                sendMessage(userId); // Send another message
-              } else {
-                promptUserAction(); // Return to main action menu
-              }
-            });
-        }
-      });
+      // Ask if the user wants to send another message or return to main action menu
+      const sendNewMessage = await sendNewMessagePrompt();
+      if (sendNewMessage) {
+        resolve(sendMessage(data)); // Send another message
+      } else {
+        resolve(false); // Return to main action menu
+      }
     });
+  });
 }
 
 async function listMessages(data) {
@@ -151,6 +177,19 @@ async function listMessages(data) {
     const sender = (message.sender && message.sender.name) || username; 
     console.log(`${sender}: ${message.content}`);
   });
+
+  const { sendNewMessage } = await inquirer.prompt([{
+    type: 'confirm',
+    name: 'sendNewMessage',
+    message: 'Do you want to send a message?',
+    default: false
+  }]);
+
+  if (sendNewMessage) {
+    await sendMessage(data);
+  } else {
+    return promptUserAction();
+  }
 }
 
 // Function to handle listing conversations
@@ -202,13 +241,13 @@ async function promptUserAction() {
     listConversations();
     break;
   case '3':
-    const { username } = await inquirer.prompt([{ // eslint-disable-line no-case-declarations
+    const { receiverId } = await inquirer.prompt([{ // eslint-disable-line no-case-declarations
       type: 'input',
-      name: 'username',
-      message: 'Enter username to chat with:'
+      name: 'receiverId',
+      message: 'Enter the id of the user you want to chat with:'
     }]);
     // Assuming username is the ID of the user to chat with
-    sendMessage(username);
+    sendMessage({ receiverId });
     break;
   case '4':
     console.log('Exiting...');

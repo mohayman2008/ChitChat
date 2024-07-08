@@ -9,6 +9,7 @@ const [USER1_Id, USER2_Id] = ['6a7ed183-bda3-4bce-8762-7d8caaf728a4', 'd80d582c-
 const CONV_ID = '8c13f164-dd7a-4e4f-9903-92cefe1b7400';
 const [MESSAGE1_Id, MESSAGE2_Id] = ['f5c0a01e-e03c-47b1-84eb-cbe5605fa0a0', '221a42c0-93a2-479c-9f8e-972942df999f'];
 
+// Message.destroy({where: {id: 'bff78293-d365-4119-8edd-6e583f49d1c9'}, force: true});
 
 let syncOptions = { alter: true };
 // Function to initialize models and associations
